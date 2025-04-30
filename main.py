@@ -4,42 +4,24 @@ from http.server import HTTPServer, SimpleHTTPRequestHandler
 
 import pandas as pd
 from jinja2 import Environment, FileSystemLoader, select_autoescape
+from settings import EXCEL_FILE
 
-df = pd.read_excel('wine3.xlsx')
-df = df.fillna('')
 
-category_order = ['Белые вина', 'Красные вина', 'Напитки']
-
-intermediate_result = defaultdict(list)
-
-min_prices = {
-    category: df[df['Категория'] == category]['Цена'].min()
-    for category in category_order
-}
-
-for _, row in df.iterrows():
-    category = row['Категория'].strip()
-    if category in category_order:
-        is_profitable = row['Цена'] == min_prices[category]
-        wine = {
-            'Картинка': row['Картинка'],
-            'Название': row['Название'],
-            'Сорт': row['Сорт'],
-            'Цена': row['Цена'],
-            'Выгодно': is_profitable,
-        }
-        intermediate_result[category].append(wine)
-
-result = {
-    category: intermediate_result[category]
-    for category in category_order
-    if category in intermediate_result
-}
+CATEGORY_ORDER = ['Белые вина', 'Красные вина', 'Напитки']
+TEMPLATE_FILE = 'template.html'
+OUTPUT_FILE = 'index.html'
+EVENT_DATE = datetime.date(year=1920, month=1, day=1)
+SERVER_ADDRESS = ('0.0.0.0', 8000)
 
 
 def get_year_phrase(n: int) -> str:
-    """
-    Возвращает строку с правильным склонением слова "год" для числа n.
+    """Возвращает строку с правильным склонением слова 'год' для числа n.
+
+        Args:
+            n (int): Количество лет.
+
+        Returns:
+            str: Строка с правильной формой слова "год".
     """
     n = abs(n)
     if 11 <= n % 100 <= 14:
@@ -55,22 +37,93 @@ def get_year_phrase(n: int) -> str:
     return f"Уже {n} {word} с вами!"
 
 
-current_date = datetime.date.today()
-event_date = datetime.date(year=1920, month=1, day=1)
+def load_and_process_data(filename: str) -> dict:
+    """Загружает данные из Excel и формирует структуру для шаблона.
 
-delta_years = current_date.year - event_date.year
+        Args:
+            filename (str): Путь к Excel-файлу.
 
-year_phrase = get_year_phrase(delta_years)
+        Returns:
+            dict: Словарь с категориями и списками вин.
+    """
 
-env = Environment(
-    loader=FileSystemLoader('.'),
-    autoescape=select_autoescape(['html']),
-)
-template = env.get_template('template.html')
-rendered_page = template.render(years_text=year_phrase, wines=result)
+    df = pd.read_excel(filename)
+    df = df.fillna('')
 
-with open('index.html', 'w', encoding='utf8') as file:
-    file.write(rendered_page)
+    min_prices = {
+        category: df[df['Категория'] == category]['Цена'].min()
+        for category in CATEGORY_ORDER
+    }
 
-server = HTTPServer(('0.0.0.0', 8000), SimpleHTTPRequestHandler)
-server.serve_forever()
+    intermediate_result = defaultdict(list)
+
+    for _, row in df.iterrows():
+        category = row['Категория'].strip()
+        if category in CATEGORY_ORDER:
+            is_profitable = row['Цена'] == min_prices[category]
+            wine = {
+                'Картинка': row['Картинка'],
+                'Название': row['Название'],
+                'Сорт': row['Сорт'],
+                'Цена': row['Цена'],
+                'Выгодно': is_profitable,
+            }
+            intermediate_result[category].append(wine)
+
+    result = {
+        category: intermediate_result[category]
+        for category in CATEGORY_ORDER
+        if category in intermediate_result
+    }
+    return result
+
+
+def render_template(template_file: str, context: dict, output_file: str) -> None:
+    """Рендерит HTML-шаблон с данными и сохраняет его в файл.
+
+        Args:
+            template_file (str): Путь к шаблону.
+            context (dict): Данные для шаблона.
+            output_file (str): Путь для сохранения HTML-файла.
+    """
+    env = Environment(
+        loader=FileSystemLoader('.'),
+        autoescape=select_autoescape(['html']),
+    )
+    template = env.get_template(template_file)
+    rendered_page = template.render(**context)
+
+    with open(output_file, 'w', encoding='utf8') as file:
+        file.write(rendered_page)
+
+
+def run_server(address: tuple) -> None:
+    """Запускает HTTP-сервер на указанном адресе.
+
+        Args:
+            address (tuple): Кортеж с IP-адресом и портом.
+    """
+    server = HTTPServer(address, SimpleHTTPRequestHandler)
+    print(f"Serving HTTP on {address[0]} port {address[1]} ...")
+    server.serve_forever()
+
+
+def main():
+    wines = load_and_process_data(EXCEL_FILE)
+
+    current_date = datetime.date.today()
+    delta_years = current_date.year - EVENT_DATE.year
+    year_phrase = get_year_phrase(delta_years)
+
+    context = {
+        'years_text': year_phrase,
+        'wines': wines,
+    }
+
+    render_template(TEMPLATE_FILE, context, OUTPUT_FILE)
+
+    run_server(SERVER_ADDRESS)
+
+
+if __name__ == '__main__':
+    main()
