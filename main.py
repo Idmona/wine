@@ -7,7 +7,6 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from settings import EXCEL_FILE
 
 
-CATEGORY_ORDER = ['Белые вина', 'Красные вина', 'Напитки']
 TEMPLATE_FILE = 'template.html'
 OUTPUT_FILE = 'index.html'
 EVENT_DATE = datetime.date(year=1920, month=1, day=1)
@@ -37,45 +36,46 @@ def get_year_phrase(n: int) -> str:
     return f"Уже {n} {word} с вами!"
 
 
-def load_and_process_data(filename: str) -> dict:
+def load_and_process_data(filename: str) -> tuple[dict, list[str]]:
     """Загружает данные из Excel и формирует структуру для шаблона.
 
         Args:
             filename (str): Путь к Excel-файлу.
 
         Returns:
-            dict: Словарь с категориями и списками вин.
+            dict: Словарь с категориями и списками вин, а также список категорий.
     """
 
     df = pd.read_excel(filename)
     df = df.fillna('')
 
+    categories_order = df['Категория'].dropna().unique().tolist()
+
     min_prices = {
         category: df[df['Категория'] == category]['Цена'].min()
-        for category in CATEGORY_ORDER
+        for category in categories_order
     }
 
     intermediate_result = defaultdict(list)
 
     for _, row in df.iterrows():
         category = row['Категория'].strip()
-        if category in CATEGORY_ORDER:
-            is_profitable = row['Цена'] == min_prices[category]
-            wine = {
-                'Картинка': row['Картинка'],
-                'Название': row['Название'],
-                'Сорт': row['Сорт'],
-                'Цена': row['Цена'],
-                'Выгодно': is_profitable,
-            }
-            intermediate_result[category].append(wine)
+        is_profitable = row['Цена'] == min_prices[category]
+        wine = {
+            'Картинка': row['Картинка'],
+            'Название': row['Название'],
+            'Сорт': row['Сорт'],
+            'Цена': row['Цена'],
+            'Выгодно': is_profitable,
+        }
+        intermediate_result[category].append(wine)
 
     result = {
         category: intermediate_result[category]
-        for category in CATEGORY_ORDER
+        for category in categories_order
         if category in intermediate_result
     }
-    return result
+    return result, categories_order
 
 
 def render_template(template_file: str, context: dict, output_file: str) -> None:
@@ -109,7 +109,7 @@ def run_server(address: tuple) -> None:
 
 
 def main():
-    wines = load_and_process_data(EXCEL_FILE)
+    wines, categories_order = load_and_process_data(EXCEL_FILE)
 
     current_date = datetime.date.today()
     delta_years = current_date.year - EVENT_DATE.year
@@ -118,6 +118,7 @@ def main():
     context = {
         'years_text': year_phrase,
         'wines': wines,
+        'categories_order': categories_order,
     }
 
     render_template(TEMPLATE_FILE, context, OUTPUT_FILE)

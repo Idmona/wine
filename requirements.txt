@@ -1,3 +1,6 @@
-pandas
-jinja2
-openpyxl
+pandas==2.2.3
+Jinja2==3.1.6
+openpyxl==3.1.5
+
+
+

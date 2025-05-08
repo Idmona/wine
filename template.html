@@ -105,18 +105,18 @@
     
     <div><a id="products"></a></div>
     <div class="site-section">
-      <div class="container">
-        <div class="row">
-          <div class="col-12 section-title text-center mb-5">
-            <h2 class="d-block">Коллекция вин</h2>
-            <p>Вино — один из самых благородных и многогранных напитков в мире! Виноделие берёт своё начало с незапамятных времён. Вино упоминается в Библии и Коране, греческой и римской мифологии, где были свои боги вина (к примеру, Дионис). Стоит отметить, что почти у каждого народа существует своя легенда, повествующая о появлении божественного эликсира — вина.
-            </p>
-          </div>
-        </div>
-      {% for category, wines_in_category in wines.items() %}
-        <h2 class="text-center mt-5 mb-4">{{ category }}</h2>
-        <div class="row">
-         {% for wine in wines_in_category %}
+  <div class="container">
+    <div class="row">
+      <div class="col-12 section-title text-center mb-5">
+        <h2 class="d-block">Коллекция вин</h2>
+        <p>Вино - один из самых благородных и многогранных напитков в мире! Виноделие берёт своё начало с незапамятных времён...</p>
+      </div>
+    </div>
+
+    {% for category, wines_in_category in wines.items() %}
+      <h2 class="text-center mt-5 mb-4">{{ category }}</h2>
+      <div class="row">
+        {% for wine in wines_in_category %}
           <div class="col-lg-4 mb-5 col-md-6">
             <div class="wine_v_1 text-center pb-4 pt-5" style="position: relative;">
               {% if wine.Выгодно %}
@@ -127,7 +127,7 @@
                 <h3 class="heading mt-3 mb-3 text-dark">{{ wine.Название }}</h3>
                 <p>
                   {% if category != 'Напитки' and wine.Сорт %}
-                    {{ "Сорт винограда - " ~ wine.Сорт }}<br/>
+                    Сорт винограда - {{ wine.Сорт }}<br/>
                   {% endif %}
                   <span class="price">{{ wine.Цена }} р.</span>
                 </p>
@@ -135,8 +135,13 @@
             </div>
           </div>
         {% endfor %}
-        </div>
-      {% endfor %}
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
+
+
 
     <div class="hero-2" style="background-image: url('assets/hero_2.jpg');">
     <div><a id="feedback"></a></div>
@@ -211,14 +216,18 @@
         </div>
       </div>
     </div>
-    
 
   </div>
   <!-- .site-wrap -->
 
 
   <!-- loader -->
-  <div id="loader" class="show fullscreen"><svg class="circular" width="48px" height="48px"><circle class="path-bg" cx="24" cy="24" r="22" fill="none" stroke-width="4" stroke="#eeeeee"/><circle class="path" cx="24" cy="24" r="22" fill="none" stroke-width="4" stroke-miterlimit="10" stroke="#ff5e15"/></svg></div>
+  <div id="loader" class="show fullscreen">
+    <svg class="circular" width="48px" height="48px">
+      <circle class="path-bg" cx="24" cy="24" r="22" fill="none" stroke-width="4" stroke="#eeeeee"/>
+      <circle class="path" cx="24" cy="24" r="22" fill="none" stroke-width="4" stroke-miterlimit="10" stroke="#ff5e15"/>
+    </svg>
+  </div>
 
   <script src="js/jquery-3.3.1.min.js"></script>
   <script src="js/jquery-migrate-3.0.1.min.js"></script>
